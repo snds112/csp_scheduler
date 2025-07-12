@@ -1,0 +1,9 @@
+name,hours_per_week,duration,pref,days_of_the_week
+Math,2,20,afternoon,"tue,thu"
+Robotics,5,10,evening,"fri,sat"
+Workshop,6,5,morning,"mon,wed,fri"
+Study_Group,4,30,all,"all"
+Tutor_Algebra,3,15,afternoon,"tue,thu,sat"
+Tutor_Python,2,20,evening,"mon,wed"
+Meeting_TeamA,1,8,morning,"thu"
+Meeting_TeamB,1,8,afternoon,"tue"
