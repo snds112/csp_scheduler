@@ -1,5 +1,6 @@
 from constraint import Problem
-from request_handler import handle
+from request_handler import load_requests
+from existing_schedule_handler import load_existing_schedule
 import sys
 import time as lib_time
 
@@ -7,7 +8,7 @@ import time as lib_time
 problem = Problem()
 
 # Get requests and resources
-requests = handle()
+requests = load_requests("requests.csv")
 all_rooms = ["Room1", "Room2"]
 
 # Add variables with prioritized time slots
@@ -39,14 +40,8 @@ def evaluate_solution(solution):
                for slot in [solution[req["name"]]])
     
 # Include existing scheduling
-# (this is only an example i will add an existing schedule handler)
-existing_schedule = {
-    "Meeting1": ("sat", "5-7", "Room2"),
-    "Workshop1": ("thu", "3-5", "Room2"),
-    "Meeting2": ("sat", "5-7", "Room1"),
-    "Workshop2": ("thu", "3-5", "Room1")
-}
-
+existing_schedule = load_existing_schedule("existing_schedule.csv")
+print(existing_schedule)
 # Add constraints for existing bookings
 for req_name, (day, time, room) in existing_schedule.items():
     # If this is one of our requests, fix its value

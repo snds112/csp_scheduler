@@ -1,0 +1,5 @@
+event_name,day,time_slot,room
+Meeting1,sat,5-7,Room2
+Workshop1,thu,3-5,Room2
+Meeting2,sat,5-7,Room1
+Workshop2,thu,3-5,Room1

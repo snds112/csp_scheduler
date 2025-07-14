@@ -1,15 +1,14 @@
 import pandas as pd
 
 
-def handle():
-    """Process requests.csv into structured data.
-    Args:
-        return_type: "dict" for list of dicts, "df" for DataFrame
-    Returns:
-        Processed requests in specified format
-    """
-    # Read CSV
-    requests = pd.read_csv("requests.csv")
+def load_requests(filepath):
+    """Loads the requests from either CSV or Excel."""
+    if filepath.endswith('.csv'):
+        requests = pd.read_csv(filepath)
+    elif filepath.endswith(('.xlsx', '.xls')):
+        requests = pd.read_excel(filepath)
+    else:
+        raise ValueError("Unsupported file format. Use .csv, .xlsx, or .xls")
 
     # Convert days
     def parse_days(days_str):
