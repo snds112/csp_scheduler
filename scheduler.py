@@ -3,14 +3,14 @@ from request_handler import handle
 import sys
 import time as lib_time
 
-# 1. Define problem
+# Define problem
 problem = Problem()
 
-# 2. Get requests and resources
+# Get requests and resources
 requests = handle()
 all_rooms = ["Room1", "Room2"]
 
-# 3. Add variables with prioritized time slots
+# Add variables with prioritized time slots
 for req in requests:
     valid_slots = []
     days = req["days"]
@@ -23,7 +23,7 @@ for req in requests:
     
     problem.addVariable(req["name"], valid_slots)
 
-# 4. Add constraints
+# Add constraints
 def no_overlap(a, b):
     return a[2] != b[2] or a[0] != b[0] or a[1] != b[1]
 
@@ -32,16 +32,42 @@ for req1 in requests:
         if req1["name"] != req2["name"]:
             problem.addConstraint(no_overlap, [req1["name"], req2["name"]])
 
-# 5. Optimization with flexible stopping
+# Optimization with flexible stopping
 def evaluate_solution(solution):
     return sum(["9-11", "11-1", "1-3", "3-5", "5-7", "7-9"].index(slot[1]) 
                for req in requests 
                for slot in [solution[req["name"]]])
+    
+# Include existing scheduling
+# (this is only an example i will add an existing schedule handler)
+existing_schedule = {
+    "Meeting1": ("sat", "5-7", "Room2"),
+    "Workshop1": ("thu", "3-5", "Room2"),
+    "Meeting2": ("sat", "5-7", "Room1"),
+    "Workshop2": ("thu", "3-5", "Room1")
+}
+
+# Add constraints for existing bookings
+for req_name, (day, time, room) in existing_schedule.items():
+    # If this is one of our requests, fix its value
+    if req_name in [r["name"] for r in requests]:
+        problem.addConstraint(
+            lambda val, d=day, t=time, r=room: val == (d, t, r),
+            [req_name]
+        )
+    else:
+        # Otherwise, prevent others from using this slot
+        for req in requests:
+            if req["name"] != req_name:
+                problem.addConstraint(
+                    lambda val, d=day, t=time, r=room: val != (d, t, r),
+                    [req["name"]]
+                )
 
 best_solution = None
 best_score = sys.maxsize
 start_time = lib_time.time()
-max_time = 120  # Maximum search time in seconds
+max_time = 20  # Maximum search time in seconds
 solutions_checked = 0
 
 print("Searching for optimal schedule...")
