@@ -98,10 +98,12 @@ class Scheduler:
             elif strategy_level == 2: # PC Desks + Lower Floor
                 if needs_pc:
                     # PC desks. If requested lower floor or unknown, try PC first then lower floor
-                    if requested_place_type == 'pc_desk' or requested_place_type == 'unknown':
-                        possible_places_for_this_res = list(coworking_pc_desks) + list(lower_floor_desks) # PC first for 'unknown'
+                    if requested_place_type == 'pc_desk':
+                        possible_places_for_this_res = list(coworking_pc_desks) # PC first for 'unknown'
                     elif requested_place_type == 'lower_floor':
                         possible_places_for_this_res = list(lower_floor_desks)
+                    elif requested_place_type == 'unknown':
+                        possible_places_for_this_res == list(lower_floor_desks) + list(coworking_pc_desks)
                 else: # Does NOT need PC
                     # Prefer non-PC desks if flexible, or if lower floor requested
                     if requested_place_type == 'lower_floor' or requested_place_type == 'unknown':
@@ -112,12 +114,14 @@ class Scheduler:
             elif strategy_level == 3: # All Places (PC Desks + Lower Floor + Rooms)
                 if needs_pc:
                     # Prioritize PC desks, then lower floor, then rooms for flexible requests
-                    if requested_place_type == 'pc_desk' or requested_place_type == 'unknown':
-                        possible_places_for_this_res = list(coworking_pc_desks) + list(lower_floor_desks) + list(room_ids)
+                    if requested_place_type == 'pc_desk' :
+                        possible_places_for_this_res = list(coworking_pc_desks) 
                     elif requested_place_type == 'lower_floor':
                         possible_places_for_this_res = list(lower_floor_desks) + list(coworking_pc_desks) + list(room_ids) # Lower floor preferred, but can go to others
                     elif requested_place_type == 'room':
-                        possible_places_for_this_res = list(room_ids) + list(lower_floor_desks) + list(coworking_pc_desks) # Room preferred
+                        possible_places_for_this_res = list(room_ids)  # Room preferred
+                    elif requested_place_type == 'unknown':
+                         possible_places_for_this_res = list(coworking_pc_desks) + list(lower_floor_desks) + list(room_ids)
                 else: # Does NOT need PC
                     # Prioritize non-PC desks (lower floor, rooms), then PC desks if no other options
                     if requested_place_type == 'pc_desk':
@@ -125,14 +129,14 @@ class Scheduler:
                     elif requested_place_type == 'lower_floor' or requested_place_type == 'unknown':
                         possible_places_for_this_res = list(lower_floor_desks) + list(room_ids) + list(coworking_pc_desks) # Prefer non-PC first
                     elif requested_place_type == 'room':
-                        possible_places_for_this_res = list(room_ids) + list(lower_floor_desks) + list(coworking_pc_desks) # Room preferred
+                        possible_places_for_this_res = list(room_ids) # Room preferred
             
             # Filter out places that are of the wrong type for 'needs_pc' IF the original request was flexible (place_id is None)
             # If a specific place was requested (e.g., place_id=5 for PC, or place_id=30 for non-PC), we respect that,
             # regardless of 'needs_pc', as it's a hard constraint from the user.
             if original_res['place_id'] is None: # Only apply 'needsPc' preference for flexible requests
                 if needs_pc:
-                    possible_places_for_this_res = [p for p in possible_places_for_this_res if p in all_pc_desks or p in all_non_pc_desks] # Needs PC, so remove non-PC only if it makes sense for the strategy
+                    possible_places_for_this_res = [p for p in possible_places_for_this_res if p in all_pc_desks ] # Needs PC, so remove non-PC only if it makes sense for the strategy
                     # Refinement: If needs_pc, only allow PC desks in strategy 1. For strategy 2/3 allow other if PC is full
                     if needs_pc:
                         if strategy_level == 1:
@@ -212,7 +216,7 @@ class Scheduler:
             if self.problem:
                 found_solution = None
                 start_time = time.time() # Start timer for this strategy
-                time_limit = 60 # Time limit for all strategies in this version
+                time_limit = 5 # Time limit for all strategies in this version
                 
                 try:
                     # Use getSolutionIter for all strategies to find the first solution quickly
@@ -290,7 +294,7 @@ class Scheduler:
             # Prioritize based on 'needPc'
             if needs_pc:
                 # If PC is needed, prioritize PC desks
-                candidate_places = list(coworking_pc_desks) + list(lower_floor_desks) + list(room_ids)
+                candidate_places = list(coworking_pc_desks)
                 # Filter out places that are definitely not suitable for PC if original was specific non-PC
                 if requested_place_type == 'lower_floor' and original_res['place_id'] is not None:
                      candidate_places = [original_res['place_id']]
@@ -365,7 +369,7 @@ dummy_reservations_data = [
     {'id': 3, 'user_id': 103, 'place_id': 101, 'formation_id': 'F001', 'day': '2025-08-02', 'start_time': '14:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': False},
     {'id': 4, 'user_id': 104, 'place_id': 12, 'formation_id': None, 'day': '2025-08-02', 'start_time': '11:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': True}, # PC desk requested, PC needed
     {'id': 5, 'user_id': 105, 'place_id': 2, 'formation_id': None, 'day': '2025-08-03', 'start_time': '08:30', 'end_time': '10:30', 'request_status': 'accepted', 'needPc': True},
-    {'id': 6, 'user_id': 106, 'place_id': 103, 'formation_id': 'F002', 'day': '2025-08-04', 'start_time': '09:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': False},
+    {'id': 6, 'user_id': 106, 'place_id': 103, 'formation_id': 'F002', 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': False},
     {'id': 7, 'user_id': 107, 'place_id': 25, 'formation_id': None, 'day': '2025-08-05', 'start_time': '13:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': False}, # Original lower floor request, no PC needed
     {'id': 8, 'user_id': 108, 'place_id': 15, 'formation_id': None, 'day': '2025-08-05', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'accepted', 'needPc': True},
     {'id': 9, 'user_id': 109, 'place_id': 102, 'formation_id': None, 'day': '2025-08-06', 'start_time': '10:00', 'end_time': '12:00', 'request_status': 'rejected', 'needPc': False},
