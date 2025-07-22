@@ -1,6 +1,5 @@
 from constraint import Problem, AllDifferentConstraint
 from datetime import datetime, timedelta
-import random
 import time
 
 class Scheduler:
@@ -50,8 +49,9 @@ class Scheduler:
         all_pc_desks = set(coworking_pc_desks)
         all_non_pc_desks = set(lower_floor_desks).union(set(room_ids)) # Lower floor desks and rooms are non-PC
 
-        # First, add all accepted/formation reservations to scheduled_assignments
+       # First, add all accepted/formation reservations to scheduled_assignments
         pending_reservation_ids = []
+        pending_reservation = []
         for reservation in self.reservations_data:
             res_id = reservation['id']
             formation_id = reservation['formation_id']
@@ -67,9 +67,15 @@ class Scheduler:
                     'status': 'accepted'
                 }
             elif request_status == 'pending':
-                pending_reservation_ids.append(res_id)
+                pending_reservation.append(reservation)
             # Rejected reservations are ignored by the scheduler
 
+        # Sort by needPC to prioritize reservations that need a pc desk so fallback assignment can assign them correctly.
+        pending_reservation.sort(key=lambda x: not x.get('needs_pc', False))
+
+        for reservation in pending_reservation:
+            pending_reservation_ids.append(reservation['id'])
+      
         # Now, define variables and constraints for pending reservations
         for res_id in pending_reservation_ids:
             original_res = self._reservations_by_id[res_id]
@@ -207,7 +213,31 @@ class Scheduler:
 
     def solve(self):
         # Store initial pending reservation IDs for fallback
-        initial_pending_ids = [res['id'] for res in self.reservations_data if res['request_status'] == 'pending']
+        initial_pending_ids = []
+        pending_reservation = []
+        for reservation in self.reservations_data:
+            res_id = reservation['id']
+            formation_id = reservation['formation_id']
+            request_status = reservation['request_status']
+
+            if request_status == 'accepted' or formation_id:
+                start_dt = self._parse_time_slot(reservation['day'], reservation['start_time'])
+                end_dt = self._parse_time_slot(reservation['day'], reservation['end_time'])
+                self.scheduled_assignments[res_id] = {
+                    'place_id': reservation['place_id'],
+                    'start_time': start_dt,
+                    'end_time': end_dt,
+                    'status': 'accepted'
+                }
+            elif request_status == 'pending':
+                pending_reservation.append(reservation)
+            # Rejected reservations are ignored by the scheduler
+
+        # Sort by needPC to prioritize reservations that need a pc desk so fallback assignment can assign them correctly.
+        pending_reservation.sort(key=lambda x: not x.get('needs_pc', False))
+
+        for reservation in pending_reservation:
+            initial_pending_ids.append(reservation['id'])
         
         # Attempt CSP strategies
         for strategy_level in range(1, 4):
@@ -220,7 +250,7 @@ class Scheduler:
                 
                 try:
                     # Use getSolutionIter for all strategies to find the first solution quickly
-                    for solution in self.problem.getSolutionIter():
+                    for solution in self.problem.getSolutionIter() and (time.time() - start_time) <= time_limit :
                         found_solution = solution
                         # Break as soon as the first solution is found
                         break 
@@ -230,6 +260,7 @@ class Scheduler:
                     found_solution = None # No solution due to error
 
                 # Check time limit specifically for Strategy 3 *after* attempting to find a solution
+                
                 if not found_solution and (time.time() - start_time) >= time_limit:
                     print(f"  Strategy {strategy_level} timed out after {time_limit} seconds without finding a solution.")
                     found_solution = None # Ensure it's explicitly None if it timed out
@@ -244,8 +275,8 @@ class Scheduler:
             print(f"Finished evaluating Strategy {strategy_level} results.")
 
         # Fallback: If no CSP strategy finds a full solution
-        print("\nNo comprehensive solution found for all pending reservations via CSP. Attempting random assignment fallback...")
-        return self._attempt_random_assignment_fallback(initial_pending_ids)
+        print("\nNo comprehensive solution found for all pending reservations via CSP. Attempting assignment fallback...")
+        return self._attempt_assignment_fallback(initial_pending_ids)
 
 
     def _process_solution(self, solution):
@@ -261,9 +292,9 @@ class Scheduler:
             }
         return self.scheduled_assignments
 
-    def _attempt_random_assignment_fallback(self, initial_pending_ids):
+    def _attempt_assignment_fallback(self, initial_pending_ids):
         """
-        Attempts to randomly assign places to pending reservations that were not
+        Attempts to assign places to pending reservations that were not
         scheduled by the CSP, respecting existing scheduled reservations.
         """
         # Start with the currently scheduled assignments (accepted/formation)
@@ -272,8 +303,7 @@ class Scheduler:
         # Identify pending reservations that still need to be scheduled
         unscheduled_pending_ids = [res_id for res_id in initial_pending_ids if res_id not in current_schedule]
         
-        random.shuffle(unscheduled_pending_ids) # Randomize order to give different reservations a chance
-
+        
         coworking_pc_desks = self.places_config['coworking_pc_desks']
         lower_floor_desks = self.places_config['lower_floor_desks'] 
         room_ids = [self.places_config['room_1']['id'], self.places_config['room_2']['id'], self.places_config['room_3']['id']]
@@ -295,40 +325,14 @@ class Scheduler:
             if needs_pc:
                 # If PC is needed, prioritize PC desks
                 candidate_places = list(coworking_pc_desks)
-                # Filter out places that are definitely not suitable for PC if original was specific non-PC
-                if requested_place_type == 'lower_floor' and original_res['place_id'] is not None:
-                     candidate_places = [original_res['place_id']]
-                elif requested_place_type == 'room' and original_res['place_id'] is not None:
-                    candidate_places = [original_res['place_id']]
+                
             else: # Does NOT need PC
                 # Prioritize non-PC desks, then PC desks as a last resort
                 candidate_places = list(lower_floor_desks) + list(room_ids) + list(coworking_pc_desks)
-                # If a specific PC desk was requested, still allow it
-                if requested_place_type == 'pc_desk' and original_res['place_id'] is not None:
-                    candidate_places = [original_res['place_id']]
-                
-            # If the original request specified a place, that's the only candidate
-            if original_res['place_id'] is not None:
-                candidate_places = [original_res['place_id']]
-            else:
-                # If flexible, further refine candidates based on needs_pc
-                if needs_pc:
-                    # Filter for places that usually have a PC, or if flexible, allow any that *could* have one.
-                    # The general ordering for flexible requests that need PC should prioritize PC desks first.
-                    candidate_places = [p for p in candidate_places if p in coworking_pc_desks]
-                    # If no PC desks, then allow other types only in higher strategies/fallback
-                    if not candidate_places:
-                        candidate_places = [p for p in all_possible_places if p in coworking_pc_desks] # Fallback to all PC desks if flexible
-                else: # Does NOT need PC
-                    # Prioritize non-PC desks
-                    candidate_places = [p for p in candidate_places if p in lower_floor_desks or p in room_ids]
-                    # If no non-PC desks, then allow PC desks as a last resort
-                    if not candidate_places:
-                        candidate_places = [p for p in all_possible_places if p in lower_floor_desks or p in room_ids or p in coworking_pc_desks]
+               
+            # Ensure no duplicates 
+            candidate_places = list(dict.fromkeys(candidate_places)) 
             
-            # Ensure no duplicates and randomize
-            candidate_places = list(dict.fromkeys(candidate_places)) # Remove duplicates while preserving order
-            random.shuffle(candidate_places)
 
 
             assigned = False
@@ -347,14 +351,14 @@ class Scheduler:
                         'place_id': place_id_candidate,
                         'start_time': res_start_dt,
                         'end_time': res_end_dt,
-                        'status': 'scheduled_random_fallback' # Indicate it was assigned via fallback
+                        'status': 'accepted' # Indicate it was assigned via fallback
                     }
                     assigned = True
-                    print(f"  Randomly assigned Reservation ID {res_id} to Place {place_id_candidate}.")
+                    print(f"  Fallback assigned Reservation ID {res_id} to Place {place_id_candidate}.")
                     break # Move to the next unscheduled reservation
 
             if not assigned:
-                print(f"  Could not assign Reservation ID {res_id} even with random fallback (no available place found).")
+                print(f"  Could not assign Reservation ID {res_id} even with  fallback (no available place found).")
                 # Optionally, you might add it to current_schedule with a 'rejected' or 'unassigned' status
                 # current_schedule[res_id] = {'status': 'unassigned'} # Or similar
 
@@ -362,9 +366,15 @@ class Scheduler:
         return self.scheduled_assignments
 
 
-# --- Dummy Data (from your CSV example) ---
+fallback_test=[]
+for i in range (1,26):
+    fallback_test.append({'id': 50+i, 'user_id': 150+i, 'place_id': 26, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': False})
+
+
+# --- Dummy Data ---
 dummy_reservations_data = [
-    {'id': 1, 'user_id': 101, 'place_id': 5, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'accepted', 'needPc': True},
+    {'id': 1, 'user_id': 101, 'place_id': 5, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': True},
+    {'id': 50, 'user_id': 150, 'place_id': 5, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': True},
     {'id': 2, 'user_id': 102, 'place_id': 25, 'formation_id': None, 'day': '2025-08-01', 'start_time': '10:00', 'end_time': '13:00', 'request_status': 'pending', 'needPc': False}, # Original lower floor request, explicitly no PC needed
     {'id': 3, 'user_id': 103, 'place_id': 101, 'formation_id': 'F001', 'day': '2025-08-02', 'start_time': '14:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': False},
     {'id': 4, 'user_id': 104, 'place_id': 12, 'formation_id': None, 'day': '2025-08-02', 'start_time': '11:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': True}, # PC desk requested, PC needed
@@ -394,7 +404,9 @@ dummy_reservations_data = [
     {'id': 27, 'user_id': 127, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False}, # New non-PC request
     {'id': 28, 'user_id': 128, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # New PC request
 ]
+dummy_reservations_data=dummy_reservations_data + fallback_test
 
+print(dummy_reservations_data)
 places_config = {
     'coworking_pc_desks': list(range(1, 25)), # 24 desks
     'lower_floor_desks': list(range(26, 46)), # 20 individual desks (IDs 26 to 45)
@@ -415,12 +427,14 @@ if __name__ == "__main__":
         for res_id in sorted_solution_keys:
             details = solution[res_id]
             original_res = scheduler._reservations_by_id[res_id]
-            status = details.get('status', 'pending_scheduled')
-            print(f"Reservation ID: {res_id}, User: {original_res['user_id']}, "
+            status = details.get('status')
+            print(f"Res ID: {res_id}, User: {original_res['user_id']}, "
                   f"Assigned Place: {details['place_id']}, "
-                  f"Original Requested Place: {'Any' if original_res['place_id'] is None else original_res['place_id']}, "
+                  f"Requested Place: {'Any' if original_res['place_id'] is None else original_res['place_id']}, "
                   f"Needs PC: {original_res.get('needPc', True)}, " # Display needPc
                   f"Start: {details['start_time'].strftime('%Y-%m-%d %H:%M')}, "
                   f"End: {details['end_time'].strftime('%H:%M')}, Status: {status}")
+           
+            
     else:
-        print("\nNo comprehensive solution found for all pending reservations after all strategies, even with random fallback.")
+        print("\nNo comprehensive solution found for all pending reservations after all strategies, even with fallback.")
