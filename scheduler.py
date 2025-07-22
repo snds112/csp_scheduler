@@ -368,51 +368,51 @@ class Scheduler:
 
 fallback_test=[]
 for i in range (1,26):
-    fallback_test.append({'id': 50+i, 'user_id': 150+i, 'place_id': 26, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': False})
+    fallback_test.append({'id': 50+i, 'user_id': 150+i, 'place_id': 26, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': True})
 
 
 # --- Dummy Data ---
 dummy_reservations_data = [
     {'id': 1, 'user_id': 101, 'place_id': 5, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': True},
     {'id': 50, 'user_id': 150, 'place_id': 5, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'pending', 'needPc': True},
-    {'id': 2, 'user_id': 102, 'place_id': 25, 'formation_id': None, 'day': '2025-08-01', 'start_time': '10:00', 'end_time': '13:00', 'request_status': 'pending', 'needPc': False}, # Original lower floor request, explicitly no PC needed
+    {'id': 2, 'user_id': 102, 'place_id': 25, 'formation_id': None, 'day': '2025-08-01', 'start_time': '10:00', 'end_time': '13:00', 'request_status': 'pending', 'needPc': False}, 
     {'id': 3, 'user_id': 103, 'place_id': 101, 'formation_id': 'F001', 'day': '2025-08-02', 'start_time': '14:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': False},
-    {'id': 4, 'user_id': 104, 'place_id': 12, 'formation_id': None, 'day': '2025-08-02', 'start_time': '11:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': True}, # PC desk requested, PC needed
+    {'id': 4, 'user_id': 104, 'place_id': 12, 'formation_id': None, 'day': '2025-08-02', 'start_time': '11:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': True},
     {'id': 5, 'user_id': 105, 'place_id': 2, 'formation_id': None, 'day': '2025-08-03', 'start_time': '08:30', 'end_time': '10:30', 'request_status': 'accepted', 'needPc': True},
     {'id': 6, 'user_id': 106, 'place_id': 103, 'formation_id': 'F002', 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': False},
-    {'id': 7, 'user_id': 107, 'place_id': 25, 'formation_id': None, 'day': '2025-08-05', 'start_time': '13:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': False}, # Original lower floor request, no PC needed
+    {'id': 7, 'user_id': 107, 'place_id': 25, 'formation_id': None, 'day': '2025-08-05', 'start_time': '13:00', 'end_time': '16:00', 'request_status': 'pending', 'needPc': False}, 
     {'id': 8, 'user_id': 108, 'place_id': 15, 'formation_id': None, 'day': '2025-08-05', 'start_time': '09:00', 'end_time': '12:00', 'request_status': 'accepted', 'needPc': True},
     {'id': 9, 'user_id': 109, 'place_id': 102, 'formation_id': None, 'day': '2025-08-06', 'start_time': '10:00', 'end_time': '12:00', 'request_status': 'rejected', 'needPc': False},
     {'id': 10, 'user_id': 110, 'place_id': 7, 'formation_id': None, 'day': '2025-08-06', 'start_time': '14:00', 'end_time': '17:00', 'request_status': 'accepted', 'needPc': True},
-    # Adding a new pending request that might need to overflow
-    {'id': 11, 'user_id': 111, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Flexible desk request, needs PC
-    {'id': 12, 'user_id': 112, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 13, 'user_id': 113, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 14, 'user_id': 114, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 15, 'user_id': 115, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 16, 'user_id': 116, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 17, 'user_id': 117, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 18, 'user_id': 118, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 19, 'user_id': 119, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 20, 'user_id': 120, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 21, 'user_id': 121, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 22, 'user_id': 122, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 23, 'user_id': 123, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 24, 'user_id': 124, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # Another flexible desk request, needs PC
-    {'id': 25, 'user_id': 125, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False}, # This one will overflow, DOES NOT need PC
-    {'id': 26, 'user_id': 126, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False}, # New non-PC request
-    {'id': 27, 'user_id': 127, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False}, # New non-PC request
-    {'id': 28, 'user_id': 128, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, # New PC request
+    
+    {'id': 11, 'user_id': 111, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True},
+    {'id': 12, 'user_id': 112, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 13, 'user_id': 113, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 14, 'user_id': 114, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 15, 'user_id': 115, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 16, 'user_id': 116, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 17, 'user_id': 117, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 18, 'user_id': 118, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 19, 'user_id': 119, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 20, 'user_id': 120, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 21, 'user_id': 121, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 22, 'user_id': 122, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 23, 'user_id': 123, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True},
+    {'id': 24, 'user_id': 124, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
+    {'id': 25, 'user_id': 125, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False}, 
+    {'id': 26, 'user_id': 126, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False},
+    {'id': 27, 'user_id': 127, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': False},
+    {'id': 28, 'user_id': 128, 'place_id': None, 'formation_id': None, 'day': '2025-08-01', 'start_time': '09:00', 'end_time': '10:00', 'request_status': 'pending', 'needPc': True}, 
 ]
 dummy_reservations_data=dummy_reservations_data + fallback_test
 
 print(dummy_reservations_data)
 places_config = {
     'coworking_pc_desks': list(range(1, 25)), # 24 desks
-    'lower_floor_desks': list(range(26, 46)), # 20 individual desks (IDs 26 to 45)
-    'room_1': {'id': 101, 'capacity': 10},
-    'room_2': {'id': 102, 'capacity': 10},
-    'room_3': {'id': 103, 'capacity': 60},
+    'lower_floor_desks': list(range(26, 46)), # 20 individual desks 
+    'room_1': {'id': 101},
+    'room_2': {'id': 102},
+    'room_3': {'id': 103},
 }
 
 
