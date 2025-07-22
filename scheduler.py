@@ -64,7 +64,7 @@ class Scheduler:
                     'place_id': reservation['place_id'],
                     'start_time': start_dt,
                     'end_time': end_dt,
-                    'status': 'scheduled'
+                    'status': 'accepted'
                 }
             elif request_status == 'pending':
                 pending_reservation_ids.append(res_id)
@@ -257,7 +257,7 @@ class Scheduler:
                 'place_id': assigned_place_id,
                 'start_time': self._parse_time_slot(original_res['day'], original_res['start_time']),
                 'end_time': self._parse_time_slot(original_res['day'], original_res['end_time']), 
-                'status': 'scheduled'
+                'status': 'accepted'
             }
         return self.scheduled_assignments
 
