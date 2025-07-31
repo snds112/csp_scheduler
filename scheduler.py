@@ -406,7 +406,7 @@ dummy_reservations_data = [
 ]
 dummy_reservations_data=dummy_reservations_data + fallback_test
 
-print(dummy_reservations_data)
+# print(dummy_reservations_data)
 places_config = {
     'coworking_pc_desks': list(range(1, 25)), # 24 desks
     'lower_floor_desks': list(range(26, 46)), # 20 individual desks 
